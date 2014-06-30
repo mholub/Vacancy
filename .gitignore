@@ -1,0 +1,10 @@
+node_modules
+# ===== Start Yeoman.gitignore =====
+node_modules/
+bower_components/
+*.log
+
+build/
+dist/
+# ===== End Yeoman.gitignore =====
+.DS_Store
