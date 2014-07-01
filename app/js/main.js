@@ -16,7 +16,7 @@ require({
 var scene, renderer;
 var winResize, controls, stats;
 var camera, cameraParent;
-var geometry, material, mesh;
+var group;
 
 var clock = new THREE.Clock();
 
@@ -50,16 +50,30 @@ function init() {
     
     scene = new THREE.Scene();
 
-    geometry = new THREE.TorusGeometry(1, 0.2, 16, 32);
-    material = new THREE.MeshBasicMaterial({
-        color: 0x000000,
-        wireframe: true,
-        wireframeLinewidth: 2
-    });
-
-    mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
     scene.add(cameraParent);
+
+    group = new THREE.Object3D();
+                group.position.y = 0;
+                scene.add( group );
+
+    var sqLength = 1;
+
+    var squareShape = new THREE.Shape();
+    squareShape.moveTo( -sqLength/2, -sqLength/2);
+    squareShape.lineTo( -sqLength/2, sqLength/2 );
+    squareShape.lineTo( sqLength/2, sqLength/2 );
+    squareShape.lineTo( sqLength/2, -sqLength/2 );
+    squareShape.lineTo( -sqLength/2, -sqLength/2 );
+
+    for (var i = 0; i < 100; i++) {
+        var x = THREE.Math.randFloat(-10, 10);
+        var y = THREE.Math.randFloat(-10, 10);
+        var z = THREE.Math.randFloat(-5, 0);
+        var s = THREE.Math.randFloat(0, 0.2);
+        var d = THREE.Math.randFloat(0.1, 2);
+
+        addShape( squareShape, 0x000000, x, y, z, 0, 0, 0, s, d );
+    }
 }
 
 // hard limit
@@ -76,6 +90,28 @@ function limitControls(target) {
     }
     // target.rotation.x = THREE.Math.clamp(target.rotation.x, -l, l);
     // target.rotation.y = THREE.Math.clamp(target.rotation.y, -l, l);
+}
+
+function addShape( shape, color, x, y, z, rx, ry, rz, s, d ) {
+    var points = shape.createPointsGeometry();
+
+    // flat shape
+
+    var geometry = new THREE.ShapeGeometry( shape );
+
+    var mesh = THREE.SceneUtils.createMultiMaterialObject( geometry, [ new THREE.MeshLambertMaterial( { color: color } ), new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } ) ] );
+    mesh.position.set( x, y, z );
+    mesh.rotation.set( rx, ry, rz );
+    mesh.scale.set( s, s, s );
+    group.add( mesh );
+
+    // solid line
+
+    var line = new THREE.Line( points, new THREE.LineBasicMaterial( { color: color, linewidth: 2 } ) );
+    line.position.set( x, y, z - d );
+    line.rotation.set( rx, ry, rz );
+    line.scale.set( s, s, s );
+    group.add( line );
 }
 
 function animate() {
