@@ -19,7 +19,7 @@ require({
 
 var scene, renderer;
 var winResize, controls, stats;
-var camera, cameraParent;
+var camera;
 var group, uiGroup;
 
 // ui
@@ -57,43 +57,23 @@ function init() {
     document.body.appendChild(stats.domElement);
 
 
-    cameraParent = new THREE.Object3D();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
     camera.position.z = 2;
-    cameraParent.add(camera);
     winResize   = new THREEx.WindowResize(renderer, camera);
-
-    controls = new THREE.FlyControls( cameraParent, renderer.domElement );
-    controls.movementSpeed = 0;
-    controls.rollSpeed = 0.2;
     
     scene = new THREE.Scene();
     scene.fog = new THREE.Fog( 0xffe300, 2, 5 );
 
-    scene.add(cameraParent);
+    group = new THREE.Object3D();
+                    group.position.y = 0;
+                    scene.add( group );
 
-    initHelpers();
-
-    var logoTexture = THREE.ImageUtils.loadTexture( 'images/logo.png', THREE.UVMapping, function() {
-        console.log('Logo loaded');
-        var geometry = new THREE.PlaneGeometry( 0.222, 0.022 );
-        //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
-        var materialLogo = new THREE.MeshBasicMaterial( { color: 0xffe300, map: logoTexture } );
-        logo = new THREE.Mesh( geometry, materialLogo );
-        logo.name = 'logo';
-        logo.position.set(0, 0, 0);
-        logo.position.y = -0.6;
-        logo.position.z = 0.5;
-        logo.scale.set(2, 2, 2);
-        //logo.scale.set(5, 5, 5);
-        scene.add(logo);
-    } );
-
+    initUI();
     initHeader();
 
-    group = new THREE.Object3D();
-                group.position.y = 0;
-                scene.add( group );
+    controls = new THREE.FlyControls( group, renderer.domElement );
+    controls.movementSpeed = 0;
+    controls.rollSpeed = -0.2;
 
     var sqLength = 1;
 
@@ -121,8 +101,6 @@ function init() {
             addShape( squareShape, 0x000000, x, y, z, 0, 0, 0, sx, sx, d, flat );
         }
     }
-
-    initUI();
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     document.addEventListener( 'click', onDocumentClick, false );
 }
@@ -137,22 +115,9 @@ function onDocumentMouseMove( event ) {
 function onDocumentClick( event ) {
     event.preventDefault();
 
-    checkInteraction();
-}
-
-function initHelpers() {
-    // var size = 10;
-    // var step = 1;
-    // var gridHelper = new THREE.GridHelper( size, step );
-
-    // gridHelper.position = new THREE.Vector3( 0, -1, 0 );
-    // gridHelper.rotation = new THREE.Euler( 0, 0, 0 );
-
-    // scene.add( gridHelper );
-    // console.log(gridHelper);
-
-    // var axisHelper = new THREE.AxisHelper( 5 );
-    // scene.add( axisHelper );
+    checkInteraction(function(obj) {
+        console.log('click', obj);
+    });
 }
 
 function initHeader() {
@@ -164,14 +129,32 @@ function initHeader() {
         THREE.GeometryUtils.center( geometry );
 
         //geometry = new THREE.BoxGeometry(1000, 1000, 1000);
-        //header = new THREE.Line(geometry, new THREE.LineBasicMaterial( {color: 0x000000 } ), THREE.LineStrip);
-        header = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: false } ));
+        header = new THREE.Line(geometry, new THREE.LineBasicMaterial( {color: 0x000000, linewidth: 2 } ), THREE.LineStrip);
+        //header = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: false } ));
+        header.name = 'header';
         console.log('header loaded');
         console.log(header);
-        scene.add( header );
+        uiGroup.add( header );
         header.position.y = 0.6;
         header.position.z = 0.5;
         header.scale.set(0.0007, 0.0007, 0.0007);
+    } );
+}
+
+function initLogo() {
+    var logoTexture = THREE.ImageUtils.loadTexture( 'images/logo.png', THREE.UVMapping, function() {
+        console.log('Logo loaded');
+        var geometry = new THREE.PlaneGeometry( 0.222, 0.022 );
+        //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
+        var materialLogo = new THREE.MeshBasicMaterial( { color: 0xffe300, map: logoTexture } );
+        logo = new THREE.Mesh( geometry, materialLogo );
+        logo.name = 'logo';
+        logo.position.set(0, 0, 0);
+        logo.position.y = -0.8;
+        logo.position.z = 0.5;
+        logo.scale.set(2, 2, 2);
+        //logo.scale.set(5, 5, 5);
+        uiGroup.add(logo);
     } );
 }
 
@@ -180,6 +163,9 @@ function initUI() {
     uiGroup.name = 'UI';
     scene.add(uiGroup);
     console.log('uiGroup', uiGroup);
+
+    initLogo();
+    initHeader();
 }
 
 function limitControls(target) {
@@ -224,18 +210,22 @@ function addShape( shape, color, x, y, z, rx, ry, rz, sx, sy, d, flat ) {
     group.add( line );
 }
 
-function checkInteraction() {
+function checkInteraction(callback, noCallback) {
     //console.log('checking');
 
     var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
     projector.unprojectVector( vector, camera );
     raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
-    var intersects = raycaster.intersectObjects( scene.children );
+    var intersects = raycaster.intersectObjects( uiGroup.children );
 
     if ( intersects.length > 0 ) {
         // if (intersects[0].object !== uiGroup) {
-             console.log('intersects: ', intersects[0].object);
+             callback(intersects[0].object);
         // }
+    } else {
+        if (noCallback) {
+            noCallback();
+        }
     }
 }
 
@@ -247,10 +237,19 @@ function animate() {
 
     // mesh.rotation.x += 0.01;
     // mesh.rotation.y += 0.02;
-  //  controls.update( delta );
-    limitControls(cameraParent, controls);
+    controls.update( delta );
+    limitControls(group, controls);
 
-    //checkInteraction();
+    var k = 0.1;
+    uiGroup.rotation.set(uiGroup.rotation.x * (1 - k) + k * group.rotation.x,
+        uiGroup.rotation.y * (1 - k) + k * group.rotation.y,
+        uiGroup.rotation.z * (1 - k) + k * group.rotation.z);
+
+    checkInteraction(function() {
+        document.body.style.cursor = 'pointer';
+    }, function() {
+        document.body.style.cursor = 'auto';
+    });
 
     renderer.render(scene, camera);
 
