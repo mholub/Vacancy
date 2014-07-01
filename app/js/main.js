@@ -30,10 +30,14 @@ function init() {
     renderer.setClearColor(0xffe300, 1);
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.top = '0px';
+    renderer.domElement.style.left = '0px';
 
     stats = new Stats();
     stats.domElement.style.position = 'absolute';
-    stats.domElement.style.bottom = '0px';
+    stats.domElement.style.top = '0px';
+    stats.domElement.style.left = '0px';
     stats.domElement.style.zIndex = 100;
     document.body.appendChild(stats.domElement);
 
