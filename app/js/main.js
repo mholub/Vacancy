@@ -7,17 +7,30 @@ require({
      'vendor/FlyControls': {
         deps: ['vendor/three'],
         exports: 'THREE' },
-     'vendor/stats': { exports: 'Stats' }
-    }
+     'vendor/stats': { exports: 'Stats' },
+     'other/OBJLoader': {
+        deps: ['vendor/three'],
+        exports: 'THREE' },
+ }
 }, [
-    'vendor/three', 'vendor/threex.windowresize', 'vendor/stats', 'vendor/FlyControls'
+    'vendor/three', 'vendor/threex.windowresize', 'vendor/stats', 'vendor/FlyControls',
+    'other/OBJLoader'
 ], function(THREE, THREEx, Stats) {
 
 var scene, renderer;
 var winResize, controls, stats;
 var camera, cameraParent;
-var group;
+var group, uiGroup;
 
+// ui
+var logo, header;
+
+// interaction
+var mouse = new THREE.Vector2();
+var projector = new THREE.Projector();
+var raycaster = new THREE.Raycaster();
+
+// other
 var clock = new THREE.Clock();
 
 init();
@@ -29,10 +42,12 @@ function init() {
     } );
     renderer.setClearColor(0xffe300, 1);
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.sortObjects = false;
     document.body.appendChild(renderer.domElement);
     renderer.domElement.style.position = 'absolute';
     renderer.domElement.style.top = '0px';
     renderer.domElement.style.left = '0px';
+    //renderer.setFaceCulling(THREE.CullFaceBack);
 
     stats = new Stats();
     stats.domElement.style.position = 'absolute';
@@ -56,6 +71,25 @@ function init() {
     scene.fog = new THREE.Fog( 0xffe300, 2, 5 );
 
     scene.add(cameraParent);
+
+    initHelpers();
+
+    var logoTexture = THREE.ImageUtils.loadTexture( 'images/logo.png', THREE.UVMapping, function() {
+        console.log('Logo loaded');
+        var geometry = new THREE.PlaneGeometry( 0.222, 0.022 );
+        //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
+        var materialLogo = new THREE.MeshBasicMaterial( { color: 0xffe300, map: logoTexture } );
+        logo = new THREE.Mesh( geometry, materialLogo );
+        logo.name = 'logo';
+        logo.position.set(0, 0, 0);
+        logo.position.y = -0.6;
+        logo.position.z = 0.5;
+        logo.scale.set(2, 2, 2);
+        //logo.scale.set(5, 5, 5);
+        scene.add(logo);
+    } );
+
+    initHeader();
 
     group = new THREE.Object3D();
                 group.position.y = 0;
@@ -87,9 +121,67 @@ function init() {
             addShape( squareShape, 0x000000, x, y, z, 0, 0, 0, sx, sx, d, flat );
         }
     }
+
+    initUI();
+    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    document.addEventListener( 'click', onDocumentClick, false );
 }
 
-// hard limit
+function onDocumentMouseMove( event ) {
+    event.preventDefault();
+
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+}
+
+function onDocumentClick( event ) {
+    event.preventDefault();
+
+    checkInteraction();
+}
+
+function initHelpers() {
+    // var size = 10;
+    // var step = 1;
+    // var gridHelper = new THREE.GridHelper( size, step );
+
+    // gridHelper.position = new THREE.Vector3( 0, -1, 0 );
+    // gridHelper.rotation = new THREE.Euler( 0, 0, 0 );
+
+    // scene.add( gridHelper );
+    // console.log(gridHelper);
+
+    // var axisHelper = new THREE.AxisHelper( 5 );
+    // scene.add( axisHelper );
+}
+
+function initHeader() {
+    var loader = new THREE.OBJLoader();
+    loader.load( 'models/header.obj', function ( object ) {
+        console.log(object);
+
+        var geometry = object.children[0].geometry;
+        THREE.GeometryUtils.center( geometry );
+
+        //geometry = new THREE.BoxGeometry(1000, 1000, 1000);
+        //header = new THREE.Line(geometry, new THREE.LineBasicMaterial( {color: 0x000000 } ), THREE.LineStrip);
+        header = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: false } ));
+        console.log('header loaded');
+        console.log(header);
+        scene.add( header );
+        header.position.y = 0.6;
+        header.position.z = 0.5;
+        header.scale.set(0.0007, 0.0007, 0.0007);
+    } );
+}
+
+function initUI() {
+    uiGroup = new THREE.Object3D();
+    uiGroup.name = 'UI';
+    scene.add(uiGroup);
+    console.log('uiGroup', uiGroup);
+}
+
 function limitControls(target) {
     var l = 0.1;
     var k = 0.98;
@@ -132,6 +224,21 @@ function addShape( shape, color, x, y, z, rx, ry, rz, sx, sy, d, flat ) {
     group.add( line );
 }
 
+function checkInteraction() {
+    //console.log('checking');
+
+    var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+    projector.unprojectVector( vector, camera );
+    raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
+    var intersects = raycaster.intersectObjects( scene.children );
+
+    if ( intersects.length > 0 ) {
+        // if (intersects[0].object !== uiGroup) {
+             console.log('intersects: ', intersects[0].object);
+        // }
+    }
+}
+
 function animate() {
     stats.begin();
 
@@ -140,8 +247,10 @@ function animate() {
 
     // mesh.rotation.x += 0.01;
     // mesh.rotation.y += 0.02;
-    controls.update( delta );
+  //  controls.update( delta );
     limitControls(cameraParent, controls);
+
+    //checkInteraction();
 
     renderer.render(scene, camera);
 
