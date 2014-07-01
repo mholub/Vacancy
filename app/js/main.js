@@ -4,56 +4,71 @@ require({
     shim: {
      'vendor/three': { exports: 'THREE' },
      'vendor/threex.windowresize': { exports: 'THREEx' },
+     'vendor/FlyControls': { exports: 'THREE' },
     }
 }, [
-    'vendor/three', 'vendor/threex.windowresize'
+    'vendor/three', 'vendor/threex.windowresize', 'vendor/FlyControls'
 ], function(THREE, THREEx) {
 
-var camera, scene, renderer, winResize;
+var scene, renderer, winResize, controls;
+var camera, cameraParent;
 var geometry, material, mesh;
+
+var clock = new THREE.Clock();
 
 init();
 animate();
 
 function init() {
-
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.z = 1000;
-
-    scene = new THREE.Scene();
-
-    geometry = new THREE.BoxGeometry(200, 200, 200);
-    material = new THREE.MeshBasicMaterial({
-        color: 0x000000,
-        wireframe: true,
-        linewidth: 3
-    });
-
-    mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
     renderer = new THREE.WebGLRenderer( {
         antialias: true
     } );
     renderer.setSize(window.innerWidth, window.innerHeight);
-    winResize   = new THREEx.WindowResize(renderer, camera);
+    document.body.appendChild(renderer.domElement);
 
     renderer.setClearColor(0xffe300, 1);
 
-    document.body.appendChild(renderer.domElement);
+    cameraParent = new THREE.Object3D();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.z = 2;
+    cameraParent.add(camera);
+    winResize   = new THREEx.WindowResize(renderer, camera);
 
+    controls = new THREE.FlyControls( cameraParent, renderer.domElement );
+    controls.movementSpeed = 0;
+    controls.rollSpeed = 0.05;
+    
+    scene = new THREE.Scene();
+
+    geometry = new THREE.BoxGeometry(1, 1, 1);
+    material = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        wireframe: true,
+        wireframeLinewidth: 3
+    });
+
+    mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+    scene.add(cameraParent);
+}
+
+function limitControls() {
+    var l = 0.2;
+    cameraParent.rotation.x = Math.max(-l, Math.min(l, cameraParent.rotation.x));
+    cameraParent.rotation.y = Math.max(-l, Math.min(l, cameraParent.rotation.y));
+    cameraParent.rotation.z = 0;
 }
 
 function animate() {
-
-    // note: three.js includes requestAnimationFrame shim
+    var delta = clock.getDelta();
     requestAnimationFrame(animate);
 
-    mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.02;
+    // mesh.rotation.x += 0.01;
+    // mesh.rotation.y += 0.02;
+    controls.update( delta );
+    limitControls();
 
     renderer.render(scene, camera);
-
 }
 
 });
