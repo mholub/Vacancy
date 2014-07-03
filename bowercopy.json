@@ -9,7 +9,8 @@
             "require.js": "requirejs/require.js",
             "threex.windowresize.js": "threex.windowresize/threex.windowresize.js",
             "FlyControls.js": "three.js-controls/src/FlyControls.js",
-            "stats.js": "stats.js/build/stats.min.js"
+            "stats.js": "stats.js/build/stats.min.js",
+            "dat.gui.js": "dat.gui/dat.gui.min.js"
         }
     }
 }
