@@ -44,11 +44,19 @@ var raycaster = new THREE.Raycaster();
 var clock = new THREE.Clock();
 
 var gui;
-var settings = {'Z Spread': 3000, 'Test!': function() {
-    blowSkill(skills[0]);
-    blowSkill(skills[1]);
-    blowSkill(skills[2]);
-}};
+var settings = {
+    'XY Spread': 43,
+    'Z Spread': 455,
+    'iterations': 4,
+    'damping': 0.92,
+    'speed limit': 1000,
+    'return speed': 0.2,
+    'Test!': function() {
+        blowSkill(skills[0]);
+        blowSkill(skills[1]);
+        blowSkill(skills[2]);
+    }
+};
 
 preloadAssets();
 animate();
@@ -144,7 +152,7 @@ function initHeader() {
         //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
         var materialHeader = new THREE.MeshBasicMaterial( { color: 0xffe300, map: headerTexture, transparent: true } );
         header = new THREE.Mesh( geometry, materialHeader );
-        header.name = 'logo';
+        header.name = 'header';
         header.position.set(0, 0, 0);
         header.position.y = 0.7;
         header.position.z = 0.5;
@@ -158,7 +166,7 @@ function initHeader() {
         //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
         var materialHeader = new THREE.MeshBasicMaterial( { color: 0xffe300, map: headerBackTexture, transparent: true } );
         var headerBack = new THREE.Mesh( geometry, materialHeader );
-        headerBack.name = 'logo';
+        headerBack.name = 'header_back';
         headerBack.position.set(0, 0, 0);
         headerBack.position.y = 0.7;
         headerBack.position.z = 0.47;
@@ -193,11 +201,16 @@ function initSkills() {
             var mat = new THREE.ShaderMaterial( {
                 uniforms: uniforms,
                 vertexShader: THREE.DiscardShader.vertexShader,
-                fragmentShader: THREE.DiscardShader.fragmentShader
+                fragmentShader: THREE.DiscardShader.fragmentShader,
+            //    wireframe: true
             } );
             console.log(mat);
             uniforms.map.value = textures.opengl;
-            uniforms.color.value = new THREE.Color().setHSL(1, 1, 0.5);
+            cs.userData.color1 = new THREE.Color().setHSL(THREE.Math.randFloat(0, 1), 1, 0.5);
+            cs.userData.color2 = new THREE.Color().setHSL(THREE.Math.randFloat(0, 1), 1, 0.5);
+            cs.userData.colodIdx = 0;
+            uniforms.color.value = new THREE.Color().set(cs.userData.color1);
+
             cs.userData.sharedMaterial = mat;
             setSkillMaterial(cs, mat);
             cs.position.x = -1 + i * 1;
@@ -207,8 +220,9 @@ function initSkills() {
 
             for (var l = cs.children.length - 1; l >= 0; l--) {
                 var c = cs.children[l];
+                c.userData.state = 0;
                 c.userData.origPos = c.position.clone();
-                c.userData.acceleration = new THREE.Vector3();
+                c.userData.damping = 0;
                 c.userData.velocity = new THREE.Vector3();
             }
         }
@@ -218,42 +232,26 @@ function initSkills() {
 function updateSkills(delta) {
     for (var i = skills.length - 1; i >= 0; i--) {
         var skill = skills[i];
-        var reallyAlive = false;
-        var readyToSwap = 0;
         if (skill.userData.alive) {
-           // skill.userData.sharedMaterial.opacity -= 0.05;          
             for (var l = skill.children.length - 1; l >= 0; l--) {
                 var p = skill.children[l];
 
-                    reallyAlive = true;
-                    p.userData.velocity.add(p.userData.acceleration.clone().multiplyScalar(delta));
-                    //p.userData.velocity.multiplyScalar(0.95);
+                if (p.userData.state < settings.iterations) {
+                    
+                    p.userData.velocity.multiplyScalar(p.userData.damping);
                     p.position.add(p.userData.velocity.clone().multiplyScalar(delta));
 
-                    if (p.position.distanceTo(p.userData.origPos) > 10) {
-                        //p.userData.velocity.set(0, 0, 0);
-                        readyToSwap+=1;
-
-                        p.userData.acceleration.set(0, 0, 0);
+                    if (p.userData.velocity.lengthSq() < settings['speed limit']) {
+                        p.userData.state += 1;
+                        var v = new THREE.Vector3( THREE.Math.randFloatSpread(50), 0, THREE.Math.randFloatSpread(50) )
+                            .normalize();
+                        v.multiplyScalar(THREE.Math.randFloat(0.8 * settings['XY Spread'], settings['XY Spread']));
+                        v.y = THREE.Math.randFloatSpread(settings['Z Spread']);
+                        p.userData.velocity = v.clone();
                     }
-                    if (p.userData.acceleration.lengthSq() < 1) {
-                        p.userData.velocity.multiplyScalar(0.5);
-                        if (p.userData.velocity.lengthSq() < 0.001) {
-                            p.position.lerp(p.userData.origPos, 0.2);
-                        }
-                    }
-                             
-            }
-            // if (readyToSwap > 200 && skill.userData.state === 'blowStart') {
-            //     skill.userData.state = 'blowSwap';        
-            //     skill.userData.sharedMaterial.map = 
-            //       skill.userData.sharedMaterial.map === textures.opengl ? textures.opengl2 : textures.opengl;
-            // } else if (skill.userData.state === 'blowSwap') {
-            //     skill.userData.sharedMaterial.opacity += 0.1;          
-            // }
-            if (!reallyAlive) {
-               // console.log('Turn off alive', skill);
-                //skill.userData.alive = false;
+                } else {
+                    p.position.lerp(p.userData.origPos, settings['return speed']);
+                }
             }
         }
     }
@@ -266,10 +264,11 @@ function blowSkill(skill) {
         var p = skill.children[l];
         var v = new THREE.Vector3( THREE.Math.randFloatSpread(50), 0, THREE.Math.randFloatSpread(50) )
         .normalize();
-        v.multiplyScalar(THREE.Math.randFloat(80, 100));
+        v.multiplyScalar(THREE.Math.randFloat(0.8 * settings['XY Spread'], settings['XY Spread']));
         v.y = THREE.Math.randFloatSpread(settings['Z Spread']);
         p.userData.velocity = v.clone();
-        p.userData.acceleration = v.clone();
+        p.userData.damping = settings.damping;
+        p.userData.state = 0;
     }
     console.log('Blow: ', skill);
 }
@@ -330,7 +329,12 @@ function initLogo() {
 
 function initUI() {
     gui = new dat.GUI({height: 100});
-    gui.add(settings, 'Z Spread', 0, 3000);
+    gui.add(settings, 'XY Spread', 0, 1000);
+    gui.add(settings, 'Z Spread', 0, 7000);
+    gui.add(settings, 'iterations', 0, 50);
+    gui.add(settings, 'speed limit', 0, 10000);
+    gui.add(settings, 'damping', 0, 1);
+    gui.add(settings, 'return speed', 0, 1);
     gui.add(settings, 'Test!');
 
     uiGroup = new THREE.Object3D();
@@ -432,5 +436,21 @@ function animate() {
 
     stats.end();
 }
+
+setInterval(function() {
+            console.log('blink');
+            for (var i = skills.length - 1; i >= 0; i--) {
+                var skill = skills[i];
+                if (!skill.userData.alive) {
+                    if (skill.userData.colorIdx === 0) {
+                        skill.userData.colorIdx = 1;
+                        skill.userData.sharedMaterial.uniforms.color.value.set(skill.userData.color1);
+                    } else {
+                        skill.userData.colorIdx = 0;
+                        skill.userData.sharedMaterial.uniforms.color.value.set(skill.userData.color2);
+                    }
+                }
+            }
+        }, 1000);
 
 });
