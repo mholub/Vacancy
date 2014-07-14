@@ -24,6 +24,149 @@ require({
     'other/OBJLoader', 'other/ColladaLoader', 'shaders/DiscardShader'
 ], function(THREE, THREEx, Stats, dat) {
 
+var skillDatas = [
+{
+    path: 'skills/__0000_OPENCV.png',
+    url: 'http://opencv.org/',
+    length: 6
+},
+{
+    path: 'skills/__0001_UX.png',
+    url: 'http://en.wikipedia.org/wiki/User_experience',
+    length: 2
+},
+{
+    path: 'skills/__0002_NUI.png',
+    url: 'http://en.wikipedia.org/wiki/Natural_user_interface',
+    length: 3
+},
+{
+    path: 'skills/__0003_KINECT.png',
+    url: 'http://www.microsoft.com/en-us/kinectforwindows/',
+    length: 6
+},
+{
+    path: 'skills/__0004_RPI.png',
+    url: 'http://www.raspberrypi.org/',
+    length: 3
+},
+{
+    path: 'skills/__0005_ARDUINO.png',
+    url: 'http://arduino.cc/',
+    length: 7
+},
+{
+    path: 'skills/__0006_GPGPU.png',
+    url: 'http://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units',
+    length: 5
+},
+{
+    path: 'skills/__0007_threejs.png',
+    url: 'http://threejs.org/',
+    length: 7
+},
+{
+    path: 'skills/__0008_shaders.png',
+    url: 'http://en.wikipedia.org/wiki/Shader',
+    length: 7
+},
+{
+    path: 'skills/__0010_cuda.png',
+    url: 'http://www.nvidia.ru/object/cuda_home_new.html',
+    length: 4
+},
+{
+    path: 'skills/__0011_qc.png',
+    url: 'http://en.wikipedia.org/wiki/Quartz_Composer',
+    length: 2
+},
+{
+    path: 'skills/__0012_CG.png',
+    url: 'http://en.wikipedia.org/wiki/Computer_graphics',
+    length: 2
+},
+{
+    path: 'skills/__0013_media-art.png',
+    url: 'http://www.creativeapplications.net/',
+    length: 9
+},
+{
+    path: 'skills/__0014_cinema4d.png',
+    url: 'http://www.maxon.net/products/cinema-4d-studio/who-should-use-it.html',
+    length: 8
+},
+{
+    path: 'skills/__0015_maya.png',
+    url: 'http://www.autodesk.com/products/autodesk-maya/overview',
+    length: 4
+},
+{
+    path: 'skills/__0016_td.png',
+    url: 'http://www.derivative.ca/',
+    length: 2
+},
+{
+    path: 'skills/__0017_C%2B%2B.png',
+    url: 'http://en.wikipedia.org/wiki/C%2B%2B',
+    length: 3
+},
+{
+    path: 'skills/__0018_HOUDINI.png',
+    url: 'http://www.sidefx.com/',
+    length: 7
+},
+{
+    path: 'skills/__0019_OF.png',
+    url: 'http://www.openframeworks.cc/',
+    length: 2
+},
+{
+    path: 'skills/__0020_C%23.png',
+    url: 'http://en.wikipedia.org/wiki/C_Sharp_(programming_language)',
+    length: 2
+},
+{
+    path: 'skills/__0021_WebGL.png',
+    url: 'http://www.chromeexperiments.com/webgl/',
+    length: 5
+},
+{
+    path: 'skills/__0022_Direct3D.png',
+    url: 'http://en.wikipedia.org/wiki/Direct3D',
+    length: 8
+},
+{
+    path: 'skills/__0024_HLSL.png',
+    url: 'http://en.wikipedia.org/wiki/High-level_shader_language',
+    length: 4
+},
+{
+    path: 'skills/__0025_GLSL.png',
+    url: 'http://en.wikipedia.org/wiki/OpenGL_Shading_Language',
+    length: 4
+},
+{
+    path: 'skills/__0026_Processing.png',
+    url: 'https://www.processing.org/exhibition/',
+    length: 10
+},
+{
+    path: 'skills/__0027_VVVV.png',
+    url: 'http://vvvv.org/',
+    length: 4
+},
+{
+    path: 'skills/__0028_Unity3D.png',
+    url: 'http://unity3d.com/',
+    length: 7
+},
+{
+    path: 'skills/__0029_Flash.png',
+    url: 'http://www.adobe.com/devnet/flash.html',
+    length: 5
+}
+];
+
 var textures = {};
 var skills = [];
 
@@ -56,6 +199,7 @@ var settings = {
 };
 
 preloadAssets();
+init();
 animate();
 
 function openInNewTab(url) {
@@ -64,20 +208,13 @@ function openInNewTab(url) {
 }
 
 function preloadAssets() {
-    var openGLTex = THREE.ImageUtils.loadTexture( 'images/opengl.png', THREE.UVMapping, function() {
-    } );
-    openGLTex.magFilter = THREE.NearestFilter;
-    openGLTex.minFilter = THREE.NearestFilter;
-    openGLTex.generateMipmaps = false;
-    textures.opengl = openGLTex;
-
-    var openGLTex2 = THREE.ImageUtils.loadTexture( 'images/opengl2.png', THREE.UVMapping, function() {
-    } );
-    openGLTex2.magFilter = THREE.NearestFilter;
-    openGLTex2.minFilter = THREE.NearestFilter;
-    openGLTex2.generateMipmaps = false;
-    textures.opengl2 = openGLTex2;
-    init();
+    for (var i = skillDatas.length - 1; i >= 0; i--) {
+        var sd = skillDatas[i];
+        sd.texture = THREE.ImageUtils.loadTexture( 'images/' + sd.path, THREE.UVMapping);
+        sd.texture.minFilter = THREE.NearestFilter;
+        sd.texture.magFilter = THREE.NearestFilter;
+        sd.texture.generateMipmaps = false;
+    };
 }
 
 function init() {
@@ -151,8 +288,7 @@ function onDocumentClick( event ) {
 }
 
 function initHeader() {
-    var headerTexture = THREE.ImageUtils.loadTexture( 'images/header.png', THREE.UVMapping, function() {
-        console.log('Header loaded');
+    var headerTexture = THREE.ImageUtils.loadTexture( 'images/header.png', THREE.UVMapping, function() {        
         var geometry = new THREE.PlaneGeometry( 0.812, 0.093 );
         //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
         var materialHeader = new THREE.MeshBasicMaterial( { color: 0xffe300, map: headerTexture, transparent: true } );
@@ -166,7 +302,6 @@ function initHeader() {
         uiGroup.add(header);
     } );
     var headerBackTexture = THREE.ImageUtils.loadTexture( 'images/header_back.png', THREE.UVMapping, function() {
-        console.log('Header Back loaded');
         var geometry = new THREE.PlaneGeometry( 0.812, 0.093 );
         //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
         var materialHeader = new THREE.MeshBasicMaterial( { color: 0xffe300, map: headerBackTexture, transparent: true } );
@@ -199,9 +334,9 @@ function initSkills() {
         console.log(gridObj);
 
         for (var i = 0; i < 3; i++) {
-            var cs = gridObj.clone();
+            var cs = gridObj.clone();        
             cs.userData.alive = false;
-
+            //cs.name = 'skill';
             var uniforms = THREE.UniformsUtils.clone(THREE.DiscardShader.uniforms);
 
             var mat = new THREE.ShaderMaterial( {
@@ -211,7 +346,9 @@ function initSkills() {
             //    wireframe: true
             } );
             console.log(mat);
-            uniforms.map.value = textures.opengl;
+            var randInd = THREE.Math.randInt(0, skillDatas.length - 1);
+            uniforms.map.value = skillDatas[randInd].texture;
+            //cs.userData.url = skillData[0].url;
             cs.userData.color1 = new THREE.Color().setHSL(THREE.Math.randFloat(0, 1), 1, 0.5);
             cs.userData.color2 = new THREE.Color().setHSL(THREE.Math.randFloat(0, 1), 1, 0.5);
             cs.userData.colodIdx = 0;
@@ -222,7 +359,8 @@ function initSkills() {
             cs.position.x = -1 + i * 1;
             cs.position.z = 0.5 + 0.0001 * i; // avoid z-fighting
             skills.push(cs);
-            uiGroup.add(cs);
+
+            uiActiveGroup.add(cs);
 
             for (var l = cs.children.length - 1; l >= 0; l--) {
                 var c = cs.children[l];
@@ -464,7 +602,7 @@ function animate() {
         uiGroup.rotation.y * (1 - k) + s * k * group.rotation.y,
         uiGroup.rotation.z * (1 - k) + s * k * group.rotation.z);
 
-    checkInteraction(function() {
+    checkInteraction(function() {        
         document.body.style.cursor = 'pointer';
     }, function() {
         document.body.style.cursor = 'auto';
