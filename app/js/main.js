@@ -18,156 +18,168 @@ require({
     'shaders/DiscardShader': {
         deps: ['vendor/three'],
         exports: 'THREE' },
+    'code/SkillParticleSystem': {
+        deps: ['vendor/three'],
+        exports: 'SkillParticleSystem' },
  }
 }, [
-    'vendor/three', 'vendor/threex.windowresize', 'vendor/stats', 'vendor/dat.gui', 'vendor/FlyControls',
+    'vendor/three', 'vendor/threex.windowresize', 'vendor/stats', 'vendor/dat.gui', 'code/SkillParticleSystem', 'vendor/FlyControls',
     'other/OBJLoader', 'other/ColladaLoader', 'shaders/DiscardShader'
-], function(THREE, THREEx, Stats, dat) {
+], function(THREE, THREEx, Stats, dat, SkillParticleSystem) {
+
+Array.prototype.contains = function(obj) {
+    var i = this.length;
+    while (i--) {
+        if (this[i] === obj) {
+            return true;
+        }
+    }
+    return false;
+}
 
 var skillDatas = [
 {
     path: 'skills/__0000_OPENCV.png',
     url: 'http://opencv.org/',
-    length: 6
+    length: 34
 },
 {
     path: 'skills/__0001_UX.png',
     url: 'http://en.wikipedia.org/wiki/User_experience',
-    length: 2
+    length: 11
 },
 {
     path: 'skills/__0002_NUI.png',
     url: 'http://en.wikipedia.org/wiki/Natural_user_interface',
-    length: 3
+    length: 15
 },
 {
     path: 'skills/__0003_KINECT.png',
     url: 'http://www.microsoft.com/en-us/kinectforwindows/',
-    length: 6
+    length: 31
 },
 {
     path: 'skills/__0004_RPI.png',
     url: 'http://www.raspberrypi.org/',
-    length: 3
+    length: 15
 },
 {
     path: 'skills/__0005_ARDUINO.png',
     url: 'http://arduino.cc/',
-    length: 7
+    length: 39
 },
 {
     path: 'skills/__0006_GPGPU.png',
     url: 'http://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units',
-    length: 5
+    length: 29
 },
 {
     path: 'skills/__0007_threejs.png',
     url: 'http://threejs.org/',
-    length: 7
+    length: 38
 },
 {
     path: 'skills/__0008_shaders.png',
     url: 'http://en.wikipedia.org/wiki/Shader',
-    length: 7
+    length: 40
 },
 {
     path: 'skills/__0010_cuda.png',
     url: 'http://www.nvidia.ru/object/cuda_home_new.html',
-    length: 4
+    length: 23
 },
 {
     path: 'skills/__0011_qc.png',
     url: 'http://en.wikipedia.org/wiki/Quartz_Composer',
-    length: 2
+    length: 11
 },
 {
     path: 'skills/__0012_CG.png',
     url: 'http://en.wikipedia.org/wiki/Computer_graphics',
-    length: 2
+    length: 11
 },
 {
     path: 'skills/__0013_media-art.png',
     url: 'http://www.creativeapplications.net/',
-    length: 9
+    length: 51
 },
 {
     path: 'skills/__0014_cinema4d.png',
     url: 'http://www.maxon.net/products/cinema-4d-studio/who-should-use-it.html',
-    length: 8
+    length: 45
 },
 {
     path: 'skills/__0015_maya.png',
     url: 'http://www.autodesk.com/products/autodesk-maya/overview',
-    length: 4
+    length: 25
 },
 {
     path: 'skills/__0016_td.png',
     url: 'http://www.derivative.ca/',
-    length: 2
+    length: 11
 },
 {
     path: 'skills/__0017_C%2B%2B.png',
     url: 'http://en.wikipedia.org/wiki/C%2B%2B',
-    length: 3
+    length: 13
 },
 {
     path: 'skills/__0018_HOUDINI.png',
     url: 'http://www.sidefx.com/',
-    length: 7
+    length: 37
 },
 {
     path: 'skills/__0019_OF.png',
     url: 'http://www.openframeworks.cc/',
-    length: 2
+    length: 9
 },
 {
     path: 'skills/__0020_C%23.png',
     url: 'http://en.wikipedia.org/wiki/C_Sharp_(programming_language)',
-    length: 2
+    length: 11
 },
 {
     path: 'skills/__0021_WebGL.png',
     url: 'http://www.chromeexperiments.com/webgl/',
-    length: 5
+    length: 27
 },
 {
     path: 'skills/__0022_Direct3D.png',
     url: 'http://en.wikipedia.org/wiki/Direct3D',
-    length: 8
+    length: 44
 },
 {
     path: 'skills/__0024_HLSL.png',
     url: 'http://en.wikipedia.org/wiki/High-level_shader_language',
-    length: 4
+    length: 20
 },
 {
     path: 'skills/__0025_GLSL.png',
     url: 'http://en.wikipedia.org/wiki/OpenGL_Shading_Language',
-    length: 4
+    length: 20
 },
 {
     path: 'skills/__0026_Processing.png',
     url: 'https://www.processing.org/exhibition/',
-    length: 10
+    length: 56
 },
 {
     path: 'skills/__0027_VVVV.png',
     url: 'http://vvvv.org/',
-    length: 4
+    length: 23
 },
 {
     path: 'skills/__0028_Unity3D.png',
     url: 'http://unity3d.com/',
-    length: 7
+    length: 39
 },
 {
     path: 'skills/__0029_Flash.png',
     url: 'http://www.adobe.com/devnet/flash.html',
-    length: 5
+    length: 27
 }
 ];
 
-var textures = {};
 var skills = [];
 
 var scene, renderer;
@@ -192,9 +204,9 @@ var settings = {
     'speed limit': 1000,
     'return speed': 0.2,
     'Test!': function() {
-        blowSkill(skills[0]);
-        blowSkill(skills[1]);
-        blowSkill(skills[2]);
+        for (var i = 0; i < skills.length; i++) {
+            blowSkill(skills[i]);
+        }
     }
 };
 
@@ -214,7 +226,7 @@ function preloadAssets() {
         sd.texture.minFilter = THREE.NearestFilter;
         sd.texture.magFilter = THREE.NearestFilter;
         sd.texture.generateMipmaps = false;
-    };
+    }
 }
 
 function init() {
@@ -278,9 +290,9 @@ function onDocumentClick( event ) {
         if (obj.name === 'logo') {
             openInNewTab('http://interactivelab.ru');
         } else if (obj.name === 'itsnotme') {
-            blowSkill(skills[0]);
-            blowSkill(skills[1]);
-            blowSkill(skills[2]);
+            for (var i = 0; i < skills.length; i++) {
+                blowSkill(skills[i]);
+            }
         } else if (obj.name === 'itsme') {
             document.location.href = 'http://interactivelab.ru/Jobs';
         }
@@ -288,7 +300,7 @@ function onDocumentClick( event ) {
 }
 
 function initHeader() {
-    var headerTexture = THREE.ImageUtils.loadTexture( 'images/header.png', THREE.UVMapping, function() {        
+    var headerTexture = THREE.ImageUtils.loadTexture( 'images/header.png', THREE.UVMapping, function() {
         var geometry = new THREE.PlaneGeometry( 0.812, 0.093 );
         //var geometry = new THREE.BoxGeometry( 0.222, 0.022, 0.022 );
         var materialHeader = new THREE.MeshBasicMaterial( { color: 0xffe300, map: headerTexture, transparent: true } );
@@ -316,6 +328,31 @@ function initHeader() {
     } );
 }
 
+function pickSkills() {
+    var skills = [];
+    var usedIdx = [];
+    var l = 0;
+    while(true) {
+        var randInd = THREE.Math.randInt(0, skillDatas.length - 1);
+        var sd = skillDatas[randInd];
+        if (l + (sd.length + 2) < 80 && !usedIdx.contains(randInd)) {
+            usedIdx.push(randInd);
+            skills.push({
+                data: sd,
+                offset: l + sd.length/2
+            });
+            l += (sd.length + 5);
+        } else {
+            break;
+        }
+    }
+    console.log('LENGTH ', l);
+    return {
+        'skills': skills,
+        length: l
+    };
+}
+
 function initSkills() {
     var loader = new THREE.ColladaLoader();
     loader.load( 'models/grid.dae', function ( collada ) {
@@ -333,8 +370,10 @@ function initSkills() {
 
         console.log(gridObj);
 
-        for (var i = 0; i < 3; i++) {
-            var cs = gridObj.clone();        
+        var ss = pickSkills();
+
+        for (var i = 0; i < ss.skills.length; i++) {
+            var cs = gridObj.clone();
             cs.userData.alive = false;
             //cs.name = 'skill';
             var uniforms = THREE.UniformsUtils.clone(THREE.DiscardShader.uniforms);
@@ -343,11 +382,20 @@ function initSkills() {
                 uniforms: uniforms,
                 vertexShader: THREE.DiscardShader.vertexShader,
                 fragmentShader: THREE.DiscardShader.fragmentShader,
-            //    wireframe: true
+                transparent: true,
+                //wireframe: true
             } );
             console.log(mat);
-            var randInd = THREE.Math.randInt(0, skillDatas.length - 1);
-            uniforms.map.value = skillDatas[randInd].texture;
+            if (ss.skills[i]) {
+                uniforms.map.value = ss.skills[i].data.texture;
+                uniforms.opacity.value = 1;
+               // cs.position.x = (-ss.length/2 + ss.skills[i].offset) / 32.0;                
+                console.log('Position: ' + cs.position.x);
+            } else {
+                uniforms.opacity.value = 0;
+            }
+            //cs.scale.set(0.01, 0.01, 0.001);
+            
             //cs.userData.url = skillData[0].url;
             cs.userData.color1 = new THREE.Color().setHSL(THREE.Math.randFloat(0, 1), 1, 0.5);
             cs.userData.color2 = new THREE.Color().setHSL(THREE.Math.randFloat(0, 1), 1, 0.5);
@@ -356,7 +404,7 @@ function initSkills() {
 
             cs.userData.sharedMaterial = mat;
             setSkillMaterial(cs, mat);
-            cs.position.x = -1 + i * 1;
+            
             cs.position.z = 0.5 + 0.0001 * i; // avoid z-fighting
             skills.push(cs);
 
@@ -365,6 +413,8 @@ function initSkills() {
             for (var l = cs.children.length - 1; l >= 0; l--) {
                 var c = cs.children[l];
                 c.userData.state = 0;
+                c.userData.defPos = c.position.clone();
+                c.position.z = c.userData.defPos.z + (-ss.length/2 + ss.skills[i].offset);
                 c.userData.origPos = c.position.clone();
                 c.userData.damping = 0;
                 c.userData.velocity = new THREE.Vector3();
@@ -602,7 +652,7 @@ function animate() {
         uiGroup.rotation.y * (1 - k) + s * k * group.rotation.y,
         uiGroup.rotation.z * (1 - k) + s * k * group.rotation.z);
 
-    checkInteraction(function() {        
+    checkInteraction(function() {
         document.body.style.cursor = 'pointer';
     }, function() {
         document.body.style.cursor = 'auto';
